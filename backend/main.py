@@ -30,18 +30,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/movies")
+@app.get("/movies", response_model=list[Movie])
 async def get_movies() -> list[Movie]:
-    raise NotImplementedError
+    return movies
 
-@app.post("/movies")
+@app.post("/movies", response_model=CreateMovieResponse)
 async def create_movie(new_movie: CreateMovieRequest) -> CreateMovieResponse:
-    raise NotImplementedError
+    movie_id = uuid.uuid4()
+    movie = Movie(movie_id=movie_id, name=new_movie.name, year=new_movie.year)
+    movies.append(movie)
+    return CreateMovieResponse(id=movie_id)
 
-@app.put("/movies/{movie_id}")
+@app.put("/movies/{movie_id}", response_model=UpdateMovieResponse)
 async def update_movie(movie_id: uuid.UUID, updated_movie: UpdateMovieRequest) -> UpdateMovieResponse:
-    raise NotImplementedError
+    for movie in movies:
+        if movie.movie_id == movie_id:
+            movie.name = updated_movie.name
+            movie.year = updated_movie.year
+            return UpdateMovieResponse(success=True)
+    raise HTTPException(status_code=404, detail="Movie not found")
 
-@app.delete("/movies/{movie_id}")
+@app.delete("/movies/{movie_id}", response_model=DeleteMovieResponse)
 async def delete_movie(movie_id: uuid.UUID) -> DeleteMovieResponse:
-    raise NotImplementedError
+    for movie in movies:
+        if movie.movie_id == movie_id:
+            movies.remove(movie)
+            return DeleteMovieResponse(success=True)
+    raise HTTPException(status_code=404, detail="Movie not found")
